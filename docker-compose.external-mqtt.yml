@@ -1,0 +1,7 @@
+services:
+  server:
+    depends_on:
+      mysql:
+        condition: service_healthy
+      emqx:
+        condition: service_healthy

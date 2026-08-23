@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xmlns:android="http://schemas.android.com/apk/res/android" xsi:noNamespaceSchemaLocation="layout.xsd"
+            android:layout_height="match_parent" android:layout_width="match_parent">
+    <LinearLayout android:layout_height="match_parent" android:layout_width="match_parent"
+                  android:orientation="vertical" android:padding="16dp"
+                  android:background="#F1F5F9" android:gravity="center_horizontal">
+
+        <!-- 顶部信息 -->
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                  android:text="云控设备代理" android:textSize="24sp" android:textStyle="bold"
+                  android:textColor="#0F172A" android:gravity="center"
+                  android:paddingTop="16dp" android:paddingBottom="6dp"/>
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                  android:text="局域网 WS 直连 · 无需设备令牌" android:textSize="13sp"
+                  android:textColor="#2563EB" android:gravity="center" android:paddingBottom="22dp"/>
+
+        <!-- 云控连接：手机端唯一必填项 -->
+        <CardView android:layout_width="match_parent" android:layout_height="wrap_content"
+                  android:layout_marginBottom="14dp" android:cardCornerRadius="16dp"
+                  android:cardBackgroundColor="#FFFFFF" android:cardElevation="4dp">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                          android:orientation="vertical" android:padding="18dp">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                          android:text="云控连接地址（必填）" android:textSize="17sp" android:textStyle="bold"
+                          android:textColor="#1E293B" android:paddingBottom="5dp"/>
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                          android:text="只填服务器局域网 IP，端口不填时自动使用 18080"
+                          android:textSize="12sp" android:textColor="#64748B" android:paddingBottom="10dp"/>
+                <EditText android:layout_width="match_parent" android:layout_height="44dp"
+                          android:tag="server_address" android:hint="例如 192.168.1.100"
+                          android:textSize="14sp" android:textColor="#1E293B" android:textColorHint="#94A3B8"
+                          android:singleLine="true" android:background="#F8FAFC"
+                          android:cornerRadius="10dp" android:padding="10dp"/>
+            </LinearLayout>
+        </CardView>
+
+        <!-- 模式选择卡片 -->
+        <CardView android:layout_width="match_parent" android:layout_height="wrap_content"
+                  android:layout_marginBottom="14dp" android:cardCornerRadius="16dp"
+                  android:cardBackgroundColor="#FFFFFF" android:cardElevation="4dp">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                          android:orientation="vertical" android:padding="18dp">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                          android:text="运行模式" android:textSize="17sp" android:textStyle="bold"
+                          android:textColor="#1E293B" android:paddingBottom="6dp"/>
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                          android:text="选择设备的控制方式，点击按钮即可切换"
+                          android:textSize="12sp" android:textColor="#64748B" android:paddingBottom="10dp"/>
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                          android:text="USB HID · 蓝牙 HID · OTG HID · 代理 · 无障碍"
+                          android:textSize="12sp" android:textColor="#94A3B8" android:paddingBottom="12dp"/>
+                <Button android:layout_width="match_parent" android:layout_height="44dp"
+                        android:tag="modeBtn" android:text="当前: 代理模式 (点击切换)"
+                        android:textSize="15sp" android:textStyle="bold" android:textColor="#FFFFFF"
+                        android:background="#2563EB" android:cornerRadius="10dp"/>
+                <Button android:layout_width="match_parent" android:layout_height="40dp"
+                        android:layout_marginTop="9dp"
+                        android:tag="dimBtn" android:text="屏幕昏暗: 关 (点击切换)"
+                        android:textSize="14sp" android:textColor="#FFFFFF" android:background="#64748B"
+                        android:cornerRadius="10dp"/>
+            </LinearLayout>
+        </CardView>
+
+        <!-- 设备名称卡片 -->
+        <CardView android:layout_width="match_parent" android:layout_height="wrap_content"
+                  android:layout_marginBottom="14dp" android:cardCornerRadius="16dp"
+                  android:cardBackgroundColor="#FFFFFF" android:cardElevation="4dp">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                          android:orientation="vertical" android:padding="18dp">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                          android:text="设备名称" android:textSize="17sp" android:textStyle="bold"
+                          android:textColor="#1E293B" android:paddingBottom="5dp"/>
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                          android:text="用于云控页面识别这台手机"
+                          android:textSize="12sp" android:textColor="#64748B" android:paddingBottom="10dp"/>
+                <EditText android:layout_width="match_parent" android:layout_height="44dp"
+                          android:tag="device_name" android:hint="输入设备编号，如 1号机"
+                          android:textSize="14sp" android:textColor="#1E293B" android:textColorHint="#94A3B8"
+                          android:background="#F8FAFC" android:cornerRadius="10dp" android:padding="10dp"/>
+            </LinearLayout>
+        </CardView>
+
+        <!-- 启动按钮 -->
+        <Button android:layout_width="match_parent" android:layout_height="48dp"
+                android:layout_marginTop="2dp" android:tag="startBtn"
+                android:text="▶  启动脚本（云控）" android:textSize="16sp" android:textStyle="bold"
+                android:textColor="#FFFFFF" android:background="#16A34A" android:cornerRadius="12dp"/>
+
+        <!-- 直接启动抖音（本地+云控双开） -->
+        <Button android:layout_width="match_parent" android:layout_height="48dp"
+                android:layout_marginTop="10dp" android:tag="directStartBtn"
+                android:text="⚡  直接启动抖音 + 云控" android:textSize="16sp" android:textStyle="bold"
+                android:textColor="#FFFFFF" android:background="#F59E0B" android:cornerRadius="12dp"/>
+
+        <!-- 保存 + 启动环境 -->
+        <LinearLayout android:orientation="horizontal" android:layout_width="match_parent"
+                      android:layout_height="wrap_content" android:layout_marginTop="10dp">
+            <Button android:layout_width="0dp" android:layout_height="44dp" android:layout_weight="1"
+                    android:tag="saveAllBtn" android:text="保存参数" android:textSize="14sp"
+                    android:textStyle="bold" android:textColor="#FFFFFF" android:background="#2563EB"
+                    android:cornerRadius="10dp"/>
+            <Button android:layout_width="0dp" android:layout_height="44dp" android:layout_weight="1"
+                    android:tag="systemSetting" android:text="系统设置" android:textSize="14sp"
+                    android:textColor="#334155" android:background="#E2E8F0"
+                    android:cornerRadius="10dp" android:layout_marginLeft="8dp"/>
+        </LinearLayout>
+
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                  android:text="v91  ·  EasyClick 局域网免令牌代理" android:textSize="11sp" android:textColor="#94A3B8"
+                  android:gravity="center" android:paddingTop="22dp" android:paddingBottom="8dp"/>
+    </LinearLayout>
+</ScrollView>

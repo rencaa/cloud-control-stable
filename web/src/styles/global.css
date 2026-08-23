@@ -1,0 +1,168 @@
+/* =========================================
+ * 云控系统 - 全局主题
+ * ========================================= */
+
+/* === CSS 变量 === */
+:root {
+  --primary: #0066FF;
+  --primary-light: #3388FF;
+  --primary-dark: #0044CC;
+  --success: #00C853;
+  --warning: #FF9500;
+  --danger: #FF3B30;
+  --bg: #F2F3F7;
+  --bg-card: #FFFFFF;
+  --text: #1A1A2E;
+  --text-muted: #8E8E93;
+  --border: #E5E5EA;
+  --radius: 0.75rem;
+  --radius-sm: 0.5rem;
+  --shadow: 0 2px 8px rgba(0,0,0,.06);
+  --shadow-lg: 0 6px 20px rgba(0,0,0,.10);
+  --font: 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', system-ui, sans-serif;
+  --transition: 180ms ease;
+}
+
+/* === 全局基础 === */
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* === Element Plus 主题覆盖 === */
+:root {
+  --el-color-primary: #0066FF;
+  --el-color-primary-light-3: #3388FF;
+  --el-color-primary-light-5: #66AAFF;
+  --el-color-primary-light-7: #99CCFF;
+  --el-color-primary-light-8: #BBDDFF;
+  --el-color-primary-light-9: #DDEEFF;
+  --el-color-primary-dark-2: #0044CC;
+  --el-color-success: var(--success);
+  --el-color-warning: var(--warning);
+  --el-color-danger: var(--danger);
+  --el-border-radius-base: 8px;
+  --el-font-family: var(--font);
+}
+
+body {
+  background: linear-gradient(180deg, #EEF2FF 0%, #F2F3F7 100%);
+}
+
+/* === 卡片增强 === */
+.el-card {
+  border-radius: var(--radius) !important;
+  box-shadow: var(--shadow) !important;
+  border: 1px solid var(--border) !important;
+  transition: box-shadow var(--transition);
+}
+.el-card:hover {
+  box-shadow: var(--shadow-lg) !important;
+}
+
+/* === 表格 === */
+.el-table {
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.el-table th {
+  background: oklch(0.98 0 0) !important;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* === 按钮 === */
+.el-button--primary {
+  border-radius: var(--radius-sm) !important;
+  font-weight: 500;
+  transition: all var(--transition);
+}
+.el-button--primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0,0,0,.12);
+}
+.el-button:not(.el-button--text):not(.el-button--link) {
+  border-radius: var(--radius-sm);
+}
+
+/* === 标签 === */
+.el-tag {
+  border-radius: 99px;
+  font-weight: 500;
+}
+
+/* === 输入框 === */
+.el-input__wrapper {
+  border-radius: var(--radius-sm) !important;
+  transition: box-shadow var(--transition);
+}
+
+/* === 分页 === */
+.el-pagination .el-pager li {
+  border-radius: var(--radius-sm) !important;
+}
+
+/* === Toast/消息 === */
+.el-message {
+  border-radius: var(--radius-sm) !important;
+  box-shadow: var(--shadow) !important;
+}
+
+/* === 页面标题 === */
+.page-header {
+  margin-bottom: 16px;
+}
+.page-header h2 {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+.page-header p {
+  color: var(--text-muted);
+  margin: 4px 0 0;
+  font-size: 13px;
+}
+
+/* === 统计卡片 === */
+.stat-card {
+  padding: 20px;
+  border-radius: var(--radius);
+  background: var(--bg-card);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+  transition: all var(--transition);
+}
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+.stat-card .stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.stat-card .stat-label {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* === 动画 === */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.anim-fade-up {
+  animation: fadeInUp 400ms ease-out;
+}
+
+/* === 移动端优化 === */
+@media (max-width: 767px) {
+  .el-card { border-radius: var(--radius-sm) !important; }
+  .page-header h2 { font-size: 18px; }
+  .stat-card .stat-value { font-size: 22px; }
+}

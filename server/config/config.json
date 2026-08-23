@@ -1,0 +1,52 @@
+{
+  "server": {
+    "port": 8080,
+    "mqtt_port": 1883,
+    "mode": "release"
+  },
+  "database": {
+    "driver": "sqlite",
+    "host": "127.0.0.1",
+    "port": 3306,
+    "user": "root",
+    "password": "root",
+    "dbname": "cloud_control",
+    "charset": "utf8mb4"
+  },
+  "jwt": {
+    "secret": "",
+    "expire_hours": 24
+  },
+  "upload": {
+    "max_size": 209715200,
+    "upload_path": "./uploads"
+  },
+  "mqtt": {
+    "username": "",
+    "password": ""
+  },
+  "security": {
+    "cors_origins": [],
+    "notification_webhook_url": "",
+    "device_auth_required": true,
+    "device_auto_register": true,
+    "auto_register_user_id": 0,
+    "device_auto_register_rate_limit": 10,
+    "device_auto_register_require_tls": false,
+    "device_legacy_tokenless_cidrs": [],
+    "device_ws_attempts_per_minute": 600,
+    "device_ws_max_connections_per_ip": 256
+  },
+  "maintenance": {
+    "device_log_retention_days": 30,
+    "metric_retention_days": 7,
+    "delivery_retention_days": 30,
+    "cleanup_batch_size": 1000,
+    "screenshot_retention_hours": 24,
+    "screenshot_max_bytes": 2147483648,
+    "backup_interval_hours": 6,
+    "backup_retention_count": 14,
+    "disk_warn_percent": 80,
+    "disk_stop_writes_percent": 90
+  }
+}

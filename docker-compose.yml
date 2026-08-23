@@ -1,0 +1,189 @@
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --default-time-zone=+08:00
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./database/init.sql:/docker-entrypoint-initdb.d/001-init.sql:ro
+      - ./database/migrations:/docker-entrypoint-initdb.d/migrations:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    logging: *default-logging
+
+  mysql-backup:
+    image: mysql:8.0
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      MYSQL_PWD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      BACKUP_INTERVAL_SECONDS: ${MYSQL_BACKUP_INTERVAL_SECONDS:-21600}
+      BACKUP_RETENTION_DAYS: ${MYSQL_BACKUP_RETENTION_DAYS:-14}
+      BACKUP_KEEP_COUNT: ${MYSQL_BACKUP_KEEP_COUNT:-14}
+    volumes:
+      - mysql-backups:/backups
+    command:
+      - sh
+      - -c
+      - |
+        while true; do
+          stamp=$$(date +%Y%m%d-%H%M%S)
+          tmp="/backups/.cloud-control-$$stamp.sql.gz.tmp"
+          if mysqldump --single-transaction --quick --routines --events -h mysql -u"$$MYSQL_USER" "$$MYSQL_DATABASE" | gzip > "$$tmp"; then
+            mv "$$tmp" "/backups/cloud-control-$$stamp.sql.gz"
+          else
+            rm -f "$$tmp"
+          fi
+          find /backups -type f -name 'cloud-control-*.sql.gz' -mtime +"$$BACKUP_RETENTION_DAYS" -delete
+          count=0
+          for backup in $$(ls -1t /backups/cloud-control-*.sql.gz 2>/dev/null); do
+            count=$$((count + 1))
+            if [ "$$count" -gt "$$BACKUP_KEEP_COUNT" ]; then rm -f "$$backup"; fi
+          done
+          sleep "$$BACKUP_INTERVAL_SECONDS"
+        done
+    logging: *default-logging
+
+  emqx:
+    image: emqx/emqx:5.8.5
+    restart: unless-stopped
+    profiles: ["external-mqtt"]
+    environment:
+      EMQX_NODE__NAME: emqx@127.0.0.1
+    ports:
+      - "${EXTERNAL_MQTT_PORT:-1884}:1883"
+      - "8883:8883"
+    volumes:
+      - emqx-data:/opt/emqx/data
+      - emqx-log:/opt/emqx/log
+      - ./deploy/generated/emqx-mysql-access.hocon:/opt/emqx/etc/base.hocon:ro
+    healthcheck:
+      test: ["CMD", "emqx", "ctl", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+    logging: *default-logging
+
+
+  server:
+    build:
+      context: ./server
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      CLOUD_DB_DRIVER: mysql
+      CLOUD_DB_HOST: mysql
+      CLOUD_DB_PORT: 3306
+      CLOUD_DB_USER: ${MYSQL_USER}
+      CLOUD_DB_PASSWORD: ${MYSQL_PASSWORD}
+      CLOUD_DB_NAME: ${MYSQL_DATABASE}
+      CLOUD_DB_MAX_OPEN_CONNS: ${CLOUD_DB_MAX_OPEN_CONNS:-64}
+      CLOUD_DB_MAX_IDLE_CONNS: ${CLOUD_DB_MAX_IDLE_CONNS:-32}
+      CLOUD_MODE: ${CLOUD_MODE:-release}
+      CLOUD_JWT_SECRET: ${CLOUD_JWT_SECRET}
+      CLOUD_ADMIN_PASSWORD: ${CLOUD_ADMIN_PASSWORD}
+      CLOUD_CORS_ORIGINS: ${CLOUD_CORS_ORIGINS}
+      CLOUD_TRUSTED_PROXY_CIDRS: ${CLOUD_TRUSTED_PROXY_CIDRS:-127.0.0.1/32,::1/128,172.16.0.0/12}
+      CLOUD_DEVICE_AUTH_REQUIRED: ${CLOUD_DEVICE_AUTH_REQUIRED:-true}
+      CLOUD_DEVICE_AUTO_REGISTER: ${CLOUD_DEVICE_AUTO_REGISTER:-false}
+      CLOUD_AUTO_REGISTER_USER_ID: ${CLOUD_AUTO_REGISTER_USER_ID:-0}
+      CLOUD_DEVICE_AUTO_REGISTER_RATE_LIMIT: ${CLOUD_DEVICE_AUTO_REGISTER_RATE_LIMIT:-10}
+      CLOUD_DEVICE_AUTO_REGISTER_REQUIRE_TLS: ${CLOUD_DEVICE_AUTO_REGISTER_REQUIRE_TLS:-true}
+      # The first stable release retains the embedded broker. External EMQX is
+      # present as an opt-in migration profile until device authentication and
+      # MQTT bridge cutover are validated.
+      CLOUD_MQTT_PORT: 1883
+      CLOUD_MQTT_BROKER_URL: ${CLOUD_MQTT_BROKER_URL:-}
+      CLOUD_MQTT_USERNAME: ${CLOUD_MQTT_USERNAME:-}
+      CLOUD_MQTT_PASSWORD: ${CLOUD_MQTT_PASSWORD:-}
+      CLOUD_MQTT_CLIENT_ID: ${CLOUD_MQTT_CLIENT_ID:-cloud-control-api-1}
+      CLOUD_RELIABLE_DELIVERY_ENABLED: ${CLOUD_RELIABLE_DELIVERY_ENABLED:-true}
+      CLOUD_RELIABLE_DELIVERY_RETRY_SECONDS: ${CLOUD_RELIABLE_DELIVERY_RETRY_SECONDS:-15}
+      CLOUD_RELIABLE_DELIVERY_MAX_RETRY_SECONDS: ${CLOUD_RELIABLE_DELIVERY_MAX_RETRY_SECONDS:-300}
+      CLOUD_RELIABLE_DELIVERY_MAX_ATTEMPTS: ${CLOUD_RELIABLE_DELIVERY_MAX_ATTEMPTS:-2048}
+      CLOUD_RELIABLE_DELIVERY_RETRY_BATCH_SIZE: ${CLOUD_RELIABLE_DELIVERY_RETRY_BATCH_SIZE:-100}
+      CLOUD_RELIABLE_DELIVERY_TTL_HOURS: ${CLOUD_RELIABLE_DELIVERY_TTL_HOURS:-168}
+      CLOUD_CRON_CATCHUP_HOURS: ${CLOUD_CRON_CATCHUP_HOURS:-24}
+      CLOUD_ALERT_DELIVERY_AGE_MINUTES: ${CLOUD_ALERT_DELIVERY_AGE_MINUTES:-10}
+      CLOUD_ALERT_QUEUE_USAGE_PERCENT: ${CLOUD_ALERT_QUEUE_USAGE_PERCENT:-70}
+      CLOUD_ALERT_CRON_LAG_MINUTES: ${CLOUD_ALERT_CRON_LAG_MINUTES:-5}
+      CLOUD_ALERT_RECONNECTS_PER_5_MIN: ${CLOUD_ALERT_RECONNECTS_PER_5_MIN:-30}
+      CLOUD_ALERT_COOLDOWN_MINUTES: ${CLOUD_ALERT_COOLDOWN_MINUTES:-15}
+      CLOUD_NOTIFY_WEBHOOK_URL: ${CLOUD_NOTIFY_WEBHOOK_URL:-}
+      CLOUD_UPDATE_PUBLIC_KEY: ${CLOUD_UPDATE_PUBLIC_KEY:-}
+      CLOUD_UPLOAD_MAX_SIZE: ${CLOUD_UPLOAD_MAX_SIZE:-209715200}
+      CLOUD_UPLOAD_MAX_TOTAL_BYTES: ${CLOUD_UPLOAD_MAX_TOTAL_BYTES:-8589934592}
+      CLOUD_DEVICE_LOG_RETENTION_DAYS: ${CLOUD_DEVICE_LOG_RETENTION_DAYS:-30}
+      CLOUD_METRIC_RETENTION_DAYS: ${CLOUD_METRIC_RETENTION_DAYS:-7}
+      CLOUD_DELIVERY_RETENTION_DAYS: ${CLOUD_DELIVERY_RETENTION_DAYS:-30}
+      CLOUD_CLEANUP_BATCH_SIZE: ${CLOUD_CLEANUP_BATCH_SIZE:-1000}
+      CLOUD_SCREENSHOT_RETENTION_HOURS: ${CLOUD_SCREENSHOT_RETENTION_HOURS:-24}
+      CLOUD_SCREENSHOT_MAX_BYTES: ${CLOUD_SCREENSHOT_MAX_BYTES:-2147483648}
+      CLOUD_BACKUP_INTERVAL_HOURS: ${CLOUD_BACKUP_INTERVAL_HOURS:-6}
+      CLOUD_BACKUP_RETENTION_COUNT: ${CLOUD_BACKUP_RETENTION_COUNT:-14}
+      GOMEMLIMIT: ${GOMEMLIMIT:-512MiB}
+      GOMAXPROCS: ${GOMAXPROCS:-2}
+    ports:
+      - "127.0.0.1:${SERVER_LOOPBACK_PORT:-8080}:8080"
+      - "${MQTT_BIND_ADDRESS:-0.0.0.0}:${EMBEDDED_MQTT_PORT:-1883}:1883"
+    volumes:
+      - uploads-data:/app/uploads
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/readyz"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+    logging: *default-logging
+
+  nginx:
+    image: nginx:1.30.4-alpine3.24
+    restart: unless-stopped
+    depends_on:
+      server:
+        condition: service_healthy
+    ports:
+      - "${HTTP_PORT:-80}:80"
+    volumes:
+      - ./deploy/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - uploads-data:/srv/uploads:ro
+    logging: *default-logging
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    restart: unless-stopped
+    profiles: ["monitoring"]
+    command: --config.file=/etc/prometheus/prometheus.yml --storage.tsdb.retention.time=15d --storage.tsdb.retention.size=1GB
+    volumes:
+      - ./deploy/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "127.0.0.1:9090:9090"
+    logging: *default-logging
+
+volumes:
+  mysql-data:
+  emqx-data:
+  emqx-log:
+  uploads-data:
+  prometheus-data:
+  mysql-backups:

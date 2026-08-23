@@ -1,0 +1,34 @@
+# Render the CHANGE_ME values into a protected file and mount it as
+# /opt/emqx/etc/base.hocon. The device password hashes are the existing SHA-256
+# values stored by the cloud-control service.
+
+authentication = [{
+  mechanism = password_based
+  backend = mysql
+  server = "mysql:3306"
+  database = "CHANGE_ME_DATABASE"
+  username = "CHANGE_ME_USER"
+  password = "CHANGE_ME_PASSWORD"
+  pool_size = 16
+  password_hash_algorithm {
+    name = sha256
+    salt_position = disable
+  }
+  query = "SELECT password_hash, salt, is_superuser FROM (SELECT auth_token_hash AS password_hash, '' AS salt, false AS is_superuser FROM devices WHERE device_id = ${username} UNION ALL SELECT password_hash, '' AS salt, true AS is_superuser FROM mqtt_service_accounts WHERE username = ${username} AND enabled = true) credentials LIMIT 1"
+  query_timeout = "5s"
+  connect_timeout = "15s"
+}]
+
+authorization {
+  no_match = deny
+  deny_action = ignore
+  sources = [{
+    type = mysql
+    server = "mysql:3306"
+    database = "CHANGE_ME_DATABASE"
+    username = "CHANGE_ME_USER"
+    password = "CHANGE_ME_PASSWORD"
+    pool_size = 16
+    query = "SELECT 'allow' AS permission, 'publish' AS action, CONCAT('cloud/device/', device_id, '/event') AS topic FROM devices WHERE device_id = ${username} UNION ALL SELECT 'allow', 'publish', CONCAT('cloud/device/', device_id, '/status') FROM devices WHERE device_id = ${username} UNION ALL SELECT 'allow', 'publish', CONCAT('cloud/device/', device_id, '/ack') FROM devices WHERE device_id = ${username} UNION ALL SELECT 'allow', 'subscribe', CONCAT('cloud/device/', device_id, '/command') FROM devices WHERE device_id = ${username}"
+  }]
+}

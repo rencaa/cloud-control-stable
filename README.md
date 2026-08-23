@@ -1,13 +1,30 @@
-# 云控稳定版（隔离实现）
+# 云控最终优化版 v2026.08.24-optimized（独立目录）
+
+本版面向 Ubuntu 24.04、2 核 2GB 内存、16GB 硬盘长期运行，在长期在线版基础上补齐任务双端看门狗、消息优先级、协议能力协商、时区/补跑策略、自适应心跳与投屏、轻量告警以及签名灰度升级/回滚。
 
 这是全新的独立目录。它不会覆盖、移动或删除原项目；容器、端口和数据卷都可独立验证，确认后再切换流量。
 
+本项目全部自有源代码公开，仅限非商业用途；许可范围和发布要求见 [全量源码公开说明](OPEN_SOURCE.md) 与 [LICENSE](LICENSE)。
+
 ## 已完成的稳定性优化
 
-- 命令可靠投递：先落库再发送，支持 ACK、超时重试、失败状态和服务重启续投。
+- 离线事件分级：任务终态永不被普通进度或 ACK 挤掉；进度自动合并，队列带 TTL、重试次数和 2 MiB 软配额。
+- 双端任务看门狗：任务可设置 30 秒到 24 小时超时；手机线程和服务端执行租约任一方发现卡死都会终止并记录超时。
+- 协议能力协商：客户端 v9.3.0 上报 `agent_version`、`protocol_version=2` 和能力列表，后台标记旧客户端。
+- 定时任务语义：每项任务保存 IANA 时区，支持 `skip`、`run_once`、`latest` 三种错过执行策略。
+- 自适应传输：空闲心跳 30 秒、执行中 10 秒、状态变化立即上报；投屏根据发送压力、电量和服务端反馈动态调整。
+- 轻量告警：无需 Prometheus 即可告警投递延迟、手机/服务端队列压力、重连风暴、cron 延迟、磁盘水位和备份失败。
+- 签名灰度升级：Ed25519 离线签名、稳定设备分桶、上一版一键回滚；手机只提示并保存清单，绝不静默安装。
+- 前端按需加载：移除整包 Element Plus 和全量图标，首屏核心 JS 由约 1.07 MiB 降至约 149 KiB；大屏图表继续按路由延迟加载。
+
+- 命令可靠投递：默认开启，先落库再发送；15 秒起步指数退避、5 分钟封顶、最长保留 7 天，重连立即补发。
+- 双层确认：MQTT QoS 1/PUBACK 确认传输，`cmd_id`/`event_ack` 确认业务处理，手机和服务端均持久化未完成消息。
+- 定时任务恢复：持久化下一次执行时间；服务停机错过 cron 时最多补跑一次，超过 24 小时的旧轮次不再轰炸设备。
+- 批次隔离：每次任务生成独立 `run_id`，迟到的旧状态不能完成新轮次，离线设备只保留最新轮次。
 - 客户端幂等：EasyClick 持久化最近 500 个 `cmd_id`，重复命令只回复 ACK，不重复执行。
 - 设备令牌：首次 WSS 注册后签发独立令牌，WS/MQTT 后续均校验令牌，数据库只保存 SHA-256 摘要。
-- 断线恢复：内置 MQTT 和 WS 双通道，MQTT 不可用时客户端回退到 WS。
+- 断线恢复：局域网优先 MQTT 1883，30 秒 KeepAlive、PINGRESP 看门狗、TCP KeepAlive；不可用时自动回退 WebSocket。
+- 手机恢复：任务状态/ACK 保存在本地 outbox，收到服务端确认才删除；EasyClick 被系统结束后重启会报告被中断任务。
 - 容量保护：限制上传单文件、上传总量、截图总量、内存帧缓存、数据库连接和后台 worker 数量。
 - 磁盘水位：达到 80% 记录告警，预计写入达到 90% 时拒绝资源上传、截图和新备份，防止 16 GiB 系统盘写满。
 - 连接防抖：手机仍然只填服务器地址、无需令牌；服务端按来源 IP 限制异常重连频率和并发连接数。
@@ -26,7 +43,7 @@
 cd /tmp && curl -fL --retry 5 -O https://work.kd99.cn/https://github.com/rencaa/cloud-control-stable/releases/latest/download/cloud-control-stable-cn-fast.tar.gz -O https://work.kd99.cn/https://github.com/rencaa/cloud-control-stable/releases/latest/download/cloud-control-stable-cn-fast.tar.gz.sha256 && sha256sum -c cloud-control-stable-cn-fast.tar.gz.sha256 && tar -xzf cloud-control-stable-cn-fast.tar.gz && sudo bash cloud-control-cn/install-cn.sh --lan
 ```
 
-手机工程可从 [国内加速下载](https://work.kd99.cn/https://github.com/rencaa/cloud-control-stable/releases/latest/download/cloud-control-easyclick-lan-v91.zip)。
+手机工程发布包名称为 `cloud-control-easyclick-lan-v93.zip`；上传 GitHub Release 后可使用 `work.kd99.cn` 镜像加速下载。
 
 先在当前 Windows 电脑生成并上传安装包：
 
@@ -47,11 +64,13 @@ cd /tmp && tar -xzf cloud-control-stable-cn-fast.tar.gz && sudo bash cloud-contr
 cd /tmp && tar -xzf cloud-control-stable-cn-fast.tar.gz && sudo bash cloud-control-cn/install-cn.sh --lan
 ```
 
-安装后手机只需要在界面填写服务器局域网 IP（例如 `192.168.1.100`），端口会自动使用 `18080`，设备 ID 自动生成，不发送也不校验设备令牌。不要把 TCP 18080 映射或开放到公网。
+安装后手机只需要填写服务器局域网 IP（例如 `192.168.1.100`）。主通道自动使用 MQTT `1883`，失败后回退 WebSocket `18080`；设备 ID 自动生成，局域网模式不校验设备令牌。不要把 TCP 1883/18080 映射到公网。
 
 需要每天把 SQLite 备份同步到 USB/挂载盘时，安装命令增加 `--backup-target /mnt/cloud-backup`；同步到另一台局域网 Linux 主机时增加 `--backup-target backup@192.168.1.20:/srv/cloud-backup --backup-key /root/.ssh/id_ed25519`。
 
 完整说明、运维和回滚见 [国内 Ubuntu 24.04 服务器一键安装](docs/国内服务器一键安装.md)。
+
+客户端灰度升级接口与离线签名方法见 [客户端签名升级与回滚](docs/客户端签名升级与回滚.md)。
 
 ## 2 核 / 2 GiB / 16 GiB 推荐模式
 
@@ -127,11 +146,11 @@ docker compose --project-name cloud-control-stable -f docker-compose.edge.yml -f
 
 ## 安全注册顺序
 
-1. 先部署 HTTPS/WSS，保持 `CLOUD_RELIABLE_DELIVERY_ENABLED=false`。
+1. 先部署 HTTPS/WSS；公网环境不开放明文 MQTT 1883，手机会自动使用 WSS。
 2. 临时设置 `CLOUD_DEVICE_AUTO_REGISTER=true`，只让待注册测试设备上线。
 3. 确认客户端保存 `device_token` 并返回 `register_ack`。
 4. 立即恢复 `CLOUD_DEVICE_AUTO_REGISTER=false` 并重建服务。
-5. 单设备验证命令、任务、断网重连和服务重启，再灰度开启可靠投递。
+5. 单设备验证命令、任务、断网重连和服务重启，再逐步扩大设备数量。
 
 ## 运维与回滚
 

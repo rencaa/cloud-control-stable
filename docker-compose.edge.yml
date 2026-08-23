@@ -1,0 +1,114 @@
+x-logging: &edge-logging
+  driver: json-file
+  options:
+    max-size: "5m"
+    max-file: "3"
+
+services:
+  server:
+    build:
+      context: ./server
+    restart: unless-stopped
+    init: true
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:size=96m,mode=1777
+    environment:
+      CLOUD_MODE: release
+      CLOUD_SERVER_PORT: 8080
+      CLOUD_MQTT_PORT: 1883
+      CLOUD_DB_DRIVER: sqlite
+      CLOUD_DB_NAME: /app/data/cloud_control.db
+      CLOUD_DB_MAX_OPEN_CONNS: 4
+      CLOUD_DB_MAX_IDLE_CONNS: 2
+      CLOUD_SQLITE_CACHE_KB: ${CLOUD_SQLITE_CACHE_KB:-8192}
+      CLOUD_SQLITE_MMAP_BYTES: ${CLOUD_SQLITE_MMAP_BYTES:-67108864}
+      CLOUD_JWT_SECRET: ${CLOUD_JWT_SECRET}
+      CLOUD_ADMIN_PASSWORD: ${CLOUD_ADMIN_PASSWORD}
+      CLOUD_CORS_ORIGINS: ${CLOUD_CORS_ORIGINS}
+      CLOUD_TRUSTED_PROXY_CIDRS: ${CLOUD_TRUSTED_PROXY_CIDRS:-127.0.0.1/32,::1/128,172.16.0.0/12}
+      CLOUD_DEVICE_AUTH_REQUIRED: ${CLOUD_DEVICE_AUTH_REQUIRED:-true}
+      CLOUD_DEVICE_AUTO_REGISTER: ${CLOUD_DEVICE_AUTO_REGISTER:-false}
+      CLOUD_AUTO_REGISTER_USER_ID: ${CLOUD_AUTO_REGISTER_USER_ID:-0}
+      CLOUD_DEVICE_AUTO_REGISTER_RATE_LIMIT: ${CLOUD_DEVICE_AUTO_REGISTER_RATE_LIMIT:-10}
+      CLOUD_DEVICE_AUTO_REGISTER_REQUIRE_TLS: ${CLOUD_DEVICE_AUTO_REGISTER_REQUIRE_TLS:-true}
+      CLOUD_RELIABLE_DELIVERY_ENABLED: ${CLOUD_RELIABLE_DELIVERY_ENABLED:-false}
+      CLOUD_RELIABLE_DELIVERY_RETRY_SECONDS: ${CLOUD_RELIABLE_DELIVERY_RETRY_SECONDS:-20}
+      CLOUD_RELIABLE_DELIVERY_MAX_ATTEMPTS: ${CLOUD_RELIABLE_DELIVERY_MAX_ATTEMPTS:-5}
+      CLOUD_RELIABLE_DELIVERY_RETRY_BATCH_SIZE: ${CLOUD_RELIABLE_DELIVERY_RETRY_BATCH_SIZE:-50}
+      CLOUD_RELIABLE_DELIVERY_TTL_HOURS: ${CLOUD_RELIABLE_DELIVERY_TTL_HOURS:-168}
+      CLOUD_CRON_CATCHUP_HOURS: ${CLOUD_CRON_CATCHUP_HOURS:-24}
+      CLOUD_ALERT_DELIVERY_AGE_MINUTES: ${CLOUD_ALERT_DELIVERY_AGE_MINUTES:-10}
+      CLOUD_ALERT_QUEUE_USAGE_PERCENT: ${CLOUD_ALERT_QUEUE_USAGE_PERCENT:-70}
+      CLOUD_ALERT_CRON_LAG_MINUTES: ${CLOUD_ALERT_CRON_LAG_MINUTES:-5}
+      CLOUD_ALERT_RECONNECTS_PER_5_MIN: ${CLOUD_ALERT_RECONNECTS_PER_5_MIN:-30}
+      CLOUD_ALERT_COOLDOWN_MINUTES: ${CLOUD_ALERT_COOLDOWN_MINUTES:-15}
+      CLOUD_NOTIFY_WEBHOOK_URL: ${CLOUD_NOTIFY_WEBHOOK_URL:-}
+      CLOUD_UPDATE_PUBLIC_KEY: ${CLOUD_UPDATE_PUBLIC_KEY:-}
+      CLOUD_UPLOAD_PATH: /app/uploads
+      CLOUD_UPLOAD_MAX_SIZE: ${CLOUD_UPLOAD_MAX_SIZE:-67108864}
+      CLOUD_UPLOAD_MAX_TOTAL_BYTES: ${CLOUD_UPLOAD_MAX_TOTAL_BYTES:-2147483648}
+      CLOUD_DEVICE_LOG_RETENTION_DAYS: ${CLOUD_DEVICE_LOG_RETENTION_DAYS:-7}
+      CLOUD_METRIC_RETENTION_DAYS: ${CLOUD_METRIC_RETENTION_DAYS:-3}
+      CLOUD_DELIVERY_RETENTION_DAYS: ${CLOUD_DELIVERY_RETENTION_DAYS:-7}
+      CLOUD_CLEANUP_BATCH_SIZE: ${CLOUD_CLEANUP_BATCH_SIZE:-500}
+      CLOUD_SCREENSHOT_RETENTION_HOURS: ${CLOUD_SCREENSHOT_RETENTION_HOURS:-6}
+      CLOUD_SCREENSHOT_MAX_BYTES: ${CLOUD_SCREENSHOT_MAX_BYTES:-268435456}
+      CLOUD_BACKUP_INTERVAL_HOURS: ${CLOUD_BACKUP_INTERVAL_HOURS:-24}
+      CLOUD_BACKUP_RETENTION_COUNT: ${CLOUD_BACKUP_RETENTION_COUNT:-7}
+      GOMEMLIMIT: ${GOMEMLIMIT:-256MiB}
+      GOGC: ${GOGC:-100}
+      GOMAXPROCS: ${GOMAXPROCS:-2}
+    ports:
+      - "127.0.0.1:${SERVER_LOOPBACK_PORT:-18081}:8080"
+      - "${MQTT_BIND_ADDRESS:-127.0.0.1}:${EMBEDDED_MQTT_PORT:-1883}:1883"
+    volumes:
+      - sqlite-data:/app/data
+      - sqlite-backups:/app/backups
+      - uploads-data:/app/uploads
+    mem_limit: 384m
+    mem_reservation: 128m
+    memswap_limit: 640m
+    cpus: 1.50
+    pids_limit: 256
+    stop_grace_period: 20s
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/readyz"]
+      interval: 15s
+      timeout: 3s
+      retries: 12
+    logging: *edge-logging
+
+  nginx:
+    image: nginx:1.30.4-alpine3.24
+    restart: unless-stopped
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /var/cache/nginx:size=16m
+      - /var/run:size=1m
+      - /tmp:size=4m
+    depends_on:
+      server:
+        condition: service_healthy
+    ports:
+      - "${HTTP_PORT:-80}:80"
+    volumes:
+      - ./deploy/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    mem_limit: 96m
+    mem_reservation: 32m
+    memswap_limit: 128m
+    cpus: 0.35
+    pids_limit: 128
+    stop_grace_period: 10s
+    logging: *edge-logging
+
+volumes:
+  sqlite-data:
+  sqlite-backups:
+  uploads-data:

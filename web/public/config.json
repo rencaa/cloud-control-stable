@@ -1,0 +1,29 @@
+{
+  "site": {
+    "name": "通用云控系统",
+    "title": "通用云控系统",
+    "description": "专业的设备管理与控制系统",
+    "keywords": "云控,设备管理,自动化,远程控制",
+    "copyright": "© 2026 通用云控系统. All rights reserved.",
+    "favicon": "/favicon.ico",
+    "logo": ""
+  },
+  "login": {
+    "title": "通用云控系统",
+    "background": "#000000",
+    "backgroundImage": "/bg.jpg",
+    "logo": "",
+    "showLogo": false,
+    "showBackgroundImage": true
+  },
+  "theme": {
+    "primaryColor": "#1890ff",
+    "successColor": "#52c41a",
+    "warningColor": "#faad14",
+    "dangerColor": "#f5222d"
+  },
+  "features": {
+    "enableWebSocket": true,
+    "enableNotification": true
+  }
+}
