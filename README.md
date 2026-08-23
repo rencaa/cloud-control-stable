@@ -20,6 +20,14 @@
 
 2 核 / 2 GiB / 16 GiB 的 Ubuntu 24.04 国内服务器，推荐使用原生精简包：不安装 Docker、不访问 Docker Hub、不在服务器安装 Go 或编译；安装依赖时临时使用阿里云镜像，失败自动回退服务器原有软件源。
 
+服务器已经连接 SSH 时，局域网免令牌版直接执行下面这一条；它通过 `work.kd99.cn` 国内加速下载，并在安装前自动校验 SHA-256：
+
+```bash
+cd /tmp && curl -fL --retry 5 -O https://work.kd99.cn/https://github.com/rencaa/cloud-control-stable/releases/latest/download/cloud-control-stable-cn-fast.tar.gz -O https://work.kd99.cn/https://github.com/rencaa/cloud-control-stable/releases/latest/download/cloud-control-stable-cn-fast.tar.gz.sha256 && sha256sum -c cloud-control-stable-cn-fast.tar.gz.sha256 && tar -xzf cloud-control-stable-cn-fast.tar.gz && sudo bash cloud-control-cn/install-cn.sh --lan
+```
+
+手机工程可从 [国内加速下载](https://work.kd99.cn/https://github.com/rencaa/cloud-control-stable/releases/latest/download/cloud-control-easyclick-lan-v91.zip)。
+
 先在当前 Windows 电脑生成并上传安装包：
 
 ```powershell
