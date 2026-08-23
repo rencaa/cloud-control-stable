@@ -59,6 +59,12 @@ try {
 
     Compress-Archive -LiteralPath $PackageRoot -DestinationPath $OutputPath -CompressionLevel Optimal -Force
     $archive = Get-Item -LiteralPath $OutputPath
+    $archiveHash = (Get-FileHash -LiteralPath $archive.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+    [System.IO.File]::WriteAllText(
+        $archive.FullName + ".sha256",
+        "$archiveHash  $($archive.Name)`n",
+        [System.Text.Encoding]::ASCII
+    )
     Write-Host "Edge deployment package: $($archive.FullName) ($([math]::Round($archive.Length / 1MB, 1)) MiB)"
 } finally {
     if (Test-Path -LiteralPath $TempRoot) {
