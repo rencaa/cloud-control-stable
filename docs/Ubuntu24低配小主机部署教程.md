@@ -1,6 +1,6 @@
-# Ubuntu 24.04 低配小主机部署教程
+# Ubuntu 24.04/26.04 低配小主机部署教程
 
-适用配置：2 核 CPU、约 2 GiB 内存、16 GiB 系统盘。这里推荐原生 Ubuntu 24.04 + Docker Edge 模式，不安装宝塔。宝塔面板及其常驻组件会占用这台机器本就有限的内存和磁盘；若一定要使用宝塔，也只把它当作反向代理入口，不要再安装一套 MySQL、Redis 或 Docker 管理栈。
+适用配置：2 核 CPU、约 2 GiB 内存、16 GiB 系统盘。这里推荐原生 Ubuntu 24.04/26.04 + Docker Edge 模式，不安装宝塔。宝塔面板及其常驻组件会占用这台机器本就有限的内存和磁盘；若一定要使用宝塔，也只把它当作反向代理入口，不要再安装一套 MySQL、Redis 或 Docker 管理栈。
 
 Edge 模式只运行两个容器：`server`（Go + SQLite + 内置 MQTT）和 `nginx`。MySQL、EMQX、Prometheus 默认都不启动。
 

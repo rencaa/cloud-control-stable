@@ -21,7 +21,7 @@ POLICY_CREATED=0
 
 usage() {
   cat <<'EOF'
-中国大陆 Ubuntu 24.04 极速安装器（免 Docker、免服务器编译）
+中国大陆 Ubuntu 24.04/26.04 极速安装器（免 Docker、免服务器编译）
 
 正式 HTTPS：
   sudo bash install-cn.sh --domain control.example.com --email admin@example.com
@@ -143,8 +143,11 @@ done
 [[ -r /etc/os-release ]] || die "无法识别操作系统"
 # shellcheck disable=SC1091
 source /etc/os-release
-[[ "${ID:-}" == "ubuntu" && "${VERSION_ID:-}" == "24.04" ]] ||
-  die "仅支持 Ubuntu 24.04，当前是 ${PRETTY_NAME:-unknown}"
+[[ "${ID:-}" == "ubuntu" && "${VERSION_ID:-}" =~ ^(24\.04|26\.04)$ ]] ||
+  die "仅支持 Ubuntu 24.04 或 26.04，当前是 ${PRETTY_NAME:-unknown}"
+UBUNTU_CODENAME="${UBUNTU_CODENAME:-${VERSION_CODENAME:-}}"
+[[ "$UBUNTU_CODENAME" == "noble" || "$UBUNTU_CODENAME" == "resolute" ]] ||
+  die "无法识别 Ubuntu 发布代号，当前是 ${UBUNTU_CODENAME:-unknown}"
 
 ARCHITECTURE="$(dpkg --print-architecture)"
 case "$ARCHITECTURE" in
@@ -295,7 +298,7 @@ configure_apt() {
   cat >"$APT_SOURCE_FILE" <<EOF
 Types: deb
 URIs: $mirror_uri
-Suites: noble noble-updates noble-backports noble-security
+Suites: $UBUNTU_CODENAME ${UBUNTU_CODENAME}-updates ${UBUNTU_CODENAME}-backports ${UBUNTU_CODENAME}-security
 Components: main universe restricted multiverse
 Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
 EOF

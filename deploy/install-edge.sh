@@ -12,7 +12,7 @@ CREATE_SWAP=1
 
 usage() {
   cat <<'EOF'
-Ubuntu 24.04 low-resource one-click installer
+Ubuntu 24.04/26.04 low-resource one-click installer
 
 Safe staging install (ports 18080/18081, does not occupy 80/443):
   sudo bash deploy/install-edge.sh --staging --host 203.0.113.10
@@ -113,8 +113,8 @@ chmod +x "$PROJECT_ROOT"/deploy/*.sh
 [[ -r /etc/os-release ]] || die "cannot identify the operating system"
 # shellcheck disable=SC1091
 source /etc/os-release
-[[ "${ID:-}" == "ubuntu" && "${VERSION_ID:-}" == "24.04" ]] ||
-  die "this installer only supports Ubuntu 24.04; detected ${PRETTY_NAME:-unknown}"
+[[ "${ID:-}" == "ubuntu" && "${VERSION_ID:-}" =~ ^(24\.04|26\.04)$ ]] ||
+  die "this installer only supports Ubuntu 24.04 or 26.04; detected ${PRETTY_NAME:-unknown}"
 case "$(dpkg --print-architecture)" in
   amd64|arm64) ;;
   *) die "only amd64 and arm64 hosts are supported" ;;
